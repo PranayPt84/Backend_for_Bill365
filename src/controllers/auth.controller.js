@@ -38,6 +38,7 @@ exports.login = async (req, res) => {
 
   try {
     const user = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+    // console.log(user.rows[0].userid);
     if (user.rows.length === 0) {
       return res.status(400).json({ success: false, message: "Invalid email or password" });
     }
@@ -48,6 +49,7 @@ exports.login = async (req, res) => {
     }
 
     const token = jwt.sign({ userId: user.rows[0].id }, SECRET_KEY, { expiresIn: "1h" });
+    req.session.userId=user.rows[0].userid;    // here session is set and store userid in it 
     res.json({ success: true, message: "Login successful", token });
   } catch (error) {
     console.error("Login error:", error);

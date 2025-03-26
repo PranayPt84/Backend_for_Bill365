@@ -8,6 +8,7 @@ const config = {
   DB_PASSWORD: process.env.DB_PASSWORD || '12345',
   DB_PORT: process.env.DB_PORT || 5432,
   SECRET_KEY: process.env.SECRET_KEY || 'your_secret_key', // Change this to a secure key
+  SESSION_SECRET:process.env.SESSION_SECRET || 'mySecrateKey'
 };
 
 module.exports = config;

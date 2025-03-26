@@ -11,8 +11,8 @@ const router = express.Router();
 
 router.get("/", authenticateToken , getAllCustomers);
 router.post("/",  authenticateToken , addCustomer);
-// router.put("/:id",  authenticateToken , updateCustomer);
-// router.delete("/:id",  authenticateToken , deleteCustomer);
+router.put("/",  authenticateToken , updateCustomer);
+router.delete("/:customer_id",  authenticateToken , deleteCustomer);
 router.get("/invoices/:customerNumber",  authenticateToken , getCustomerDetailsForInvoice);
 
 module.exports = router;
