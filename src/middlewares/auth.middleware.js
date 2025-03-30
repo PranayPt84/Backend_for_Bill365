@@ -1,28 +1,33 @@
 const jwt = require("jsonwebtoken");
 const config = require("../config/env");
+
 const authenticateToken = (req, res, next) => {
- 
   const token = req.header("Authorization");
 
-
-  if (!token) {
+  if (!token || !token.startsWith("Bearer ")) {
     return res.status(401).json({ success: false, message: "Access denied. No token provided." });
   }
 
-   try { 
-    const verified = jwt.verify(token.replace("Bearer ", ""), config.SECRET_KEY);
-    req.user = verified; 
-     const userId = req.session.userId; // Access the user ID from the session
-    //  console.log(userId);
+  try {
+    // Remove "Bearer " prefix
+    const tokenWithoutBearer = token.replace("Bearer ", "");
+    
+    // Verify JWT token
+    const verified = jwt.verify(tokenWithoutBearer, config.SECRET_KEY);
+    req.user = verified;
+
+    // Check session for userId
+    const userId = req.session.userId;
     if (!userId) {
-        return res.status(401).json({ message: "Unauthorized" });
+      return res.status(401).json({ message: "Unauthorized: No session available" });
     }
-    req.userId = userId;
+
+    req.userId = userId; // Attach userId from session to the request
     next();
   } catch (error) {
-    
+    console.error("JWT verification error:", error);
     res.status(403).json({ success: false, message: "Invalid token." });
   }
 };
 
-module.exports = authenticateToken; 
+module.exports = authenticateToken;

@@ -24,7 +24,7 @@ exports.addProduct = async (req, res) => {
     product_type,
     product_image,
     product_unit,
-    category,
+    product_category,
     selling_price,
     purchase_price,
     gst_rate,
@@ -32,17 +32,19 @@ exports.addProduct = async (req, res) => {
     custom_field
   
   } = req.body;
+  console.log(req.session.userId);
+  console.log(req.body);
 
  const userid=req.userId;
 
-  if (!product_name || !hsn_sac_code || !product_type || !product_description || !product_image ||!product_unit || !category || !selling_price || !purchase_price || !gst_rate || !generate_barcode || !custom_field ||!userid) {
+  if (!product_name || !product_category|| !hsn_sac_code || !product_type || !product_description || product_image ||!product_unit || !product_category || !selling_price || !purchase_price || !gst_rate || !generate_barcode || !custom_field ||!userid) {
     return res.status(400).json({ success: false, message: "Missing required fields" });
   }
 
   try {
     const result = await pool.query(
       "INSERT INTO products (product_name, product_hsn_code, product_description, product_type,product_image,product_unit,category,selling_price,purchase_price,gst_rate,generate_barcode,custom_field,userid) VALUES ($1, $2, $3, $4, $5, $6, $7, $8,$9,$10,$11,$12,$13 ) RETURNING product_id",
-      [product_name, hsn_sac_code, product_description, product_type,product_image,product_unit,category,selling_price,purchase_price,gst_rate,generate_barcode,custom_field ,userid]
+      [product_name, hsn_sac_code, product_description, product_type,product_image,product_unit,product_category,selling_price,purchase_price,gst_rate,generate_barcode,custom_field ,userid]
     );
 
     res.status(201).json({ success: true, message: "Product added successfully", product: result.rows[0] });
@@ -57,22 +59,23 @@ exports.updateProduct = async (req, res) => {
   
   const {
     product_name,
-    hsn_sac_code,
+    product_hsn_code,
     product_description,
     product_type,
-    product_image,
+    product_img,
     product_unit,
-    category,
+    product_category,
     selling_price,
     purchase_price,
     gst_rate,
     generate_barcode,
     custom_field,
     product_id,
-    userid  
   } = req.body;
-
-  if (!product_name || !hsn_sac_code || !product_type || !product_description || !product_image ||!product_unit || !category || !selling_price || !purchase_price || !gst_rate || !generate_barcode || !custom_field ||!userid) {
+  const userid=req.userId;
+  console.log(userid);
+  console.log(req.body);
+  if (!product_name || !product_hsn_code || !product_type || !product_description ||!product_unit || !product_category || !selling_price || !purchase_price || !gst_rate || !generate_barcode || !custom_field ||!userid) {
     return res.status(400).json({ success: false, message: "Missing required fields" });
   }
   try {
@@ -93,7 +96,7 @@ exports.updateProduct = async (req, res) => {
            updated_at = CURRENT_TIMESTAMP
        WHERE product_id = $13 AND userid = $14
        RETURNING product_id`,
-      [product_name,hsn_sac_code,product_description,product_type,product_image, product_unit,category, selling_price,  purchase_price,  gst_rate, generate_barcode,  custom_field,  product_id,  userid ]
+      [product_name,product_hsn_code,product_description,product_type,product_img, product_unit,product_category, selling_price,  purchase_price,  gst_rate, generate_barcode,  custom_field,  product_id,  userid ]
     );
 
     if (result.rowCount === 0) {
