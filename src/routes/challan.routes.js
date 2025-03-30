@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const challanController = require("../controllers/challan.controller");
-const authenticateToken = require("../middlewares/auth.middleware"); // Assuming you have an auth middleware for token verification
+const authenticateToken = require("../middlewares/auth.middleware"); 
 
 router.post("/", authenticateToken, challanController.createChallan);
 router.get("/", authenticateToken, challanController.getAllChallans);
