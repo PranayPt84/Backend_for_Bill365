@@ -123,27 +123,57 @@ exports.getChallanbyCustomerNumberandChallanids = async (req,res)=>{
 //   }
 // };
 
-// // Update a challan
-// exports.updateChallan = async (req, res) => {
-//   const { id } = req.params;
-//   const { customerNumber, billing_address, shipping_address, references, subTotal, totalAmount, challanNotes } = req.body;
+exports.updateChallan = async (req, res) => {
+  
+  const {challanDate, customerNumber, billing_address, shipping_address, references, subTotal, totalAmount, challanNotes, signature_box, challan_id ,productdetail} = req.body;
+  const userid=req.userId;
+  if(!challanDate|| !customerNumber || !billing_address || !shipping_address || !references || !subTotal || !totalAmount || !challanNotes || !signature_box || !productdetail || !challan_id|| !userid ){
+   
+    return res.status(401).json({success:false ,message:"required all fields"});
+  }
+    const tax_amount = totalAmount - subTotal;
+  try {
+    const result = await pool.query(`UPDATE challan
+      SET 
+          challan_date = $1,
+          customer_id=(SELECT customer_id FROM customers WHERE mobile_no =$2 and userid=$11),
+          mob_number = $2,
+          billing_address = $3,
+          shipping_address = $4,
+          reference = $5,
+          sub_total = $6,
+          total_amount = $7,
+          tax_amount = $8,
+          challannotes = $9,
+          signature_box = $10
+      WHERE challan_id = $12 and userid =$11
+      RETURNING challan_id`,
+      [challanDate, customerNumber, billing_address, shipping_address, references, subTotal, totalAmount, tax_amount, challanNotes, signature_box, userid, challan_id]
+    );
 
-//   try {
-//     const result = await pool.query(
-//       "UPDATE challan SET customer_id = (SELECT customer_id FROM customers WHERE mobile_no = $1), billing_address = $2, shipping_address = $3, reference = $4, sub_total = $5, total_amount = $6, challannotes = $7 WHERE challan_id = $8 RETURNING *",
-//       [customerNumber, billing_address, shipping_address, references, subTotal, totalAmount, challanNotes, id]
-//     );
+    for (const item of productdetail) {
+      const { productName, hsnCode, gstRate, unitPrice, quantity, total, invoice_item_id } = item; 
+  
+      const updatedInvoiceItem = await pool.query(`UPDATE invoice_item
+          SET 
+              product_id = (SELECT product_id FROM products WHERE product_hsn_code = $1 LIMIT 1),
+              product_name = $2,
+              product_hsn_code = $1,
+              unit_price = $3,
+              tax_rate = $4,
+              quantity = $5,
+              total_price = $6
+          WHERE invoice_item_id = $8 and userid= $7`,
+          [hsnCode, productName, unitPrice, gstRate, quantity, total, userid, invoice_item_id]);
+  }
+  res.status(200).json({ success: true, message: "Invoice updated successfully"});
+ }
+  catch (error) {
+    console.error("Error updating invoice:", error);
+    res.status(500).json({ success: false, message: "Failed to update invoice" });
+  }
+};
 
-//     if (result.rowCount === 0) {
-//       return res.status(404).json({ success: false, message: "Challan not found" });
-//     }
-
-//     res.json({ success: true, message: "Challan updated successfully", challan: result.rows[0] });
-//   } catch (error) {
-//     console.error("Error updating challan:", error);
-//     res.status(500).json({ success: false, message: "Failed to update challan" });
-//   }
-// };
 
 // // Delete a challan
 // exports.deleteChallan = async (req, res) => {

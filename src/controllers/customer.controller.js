@@ -50,7 +50,7 @@ exports.updateCustomer = async (req, res) => {
 
   const userid=req.userId;
   
-if(!email || !customer_name || !customer_category || !mobile_no || !customer_type || !shipping_address || !city || !state || !zip_code || !country || !tax_id  || !opening_value || !party || !notes || !birth_date || !anniversary_date || !personal_notes || !billing_address || !company_name || !customer_id ||!custom_field ||!userid){
+if(!email || !customer_name || !customer_category || !mobile_no || !customer_type || !shipping_address || !city || !state || !zip_code || !country || !tax_id  || !opening_value || !party || !notes || !birth_date || !anniversary_date || !personal_notes || !billing_address || !company_name || !customer_id || !custom_field ||!userid){
   return res.status(403).json({success:false ,message:"required all feilds"});
 }
   try {
