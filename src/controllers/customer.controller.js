@@ -27,7 +27,6 @@ exports.addCustomer = async (req, res) => {
    if(!email || !customer_name || !customer_category || !pan_no || !mobile_no || !customer_type || !shipping_address || !city || !state || !zip_code || !country || !tax_id || is_active || !opening_value || !party || !notes || !birth_date || !anniversary_date || !personal_notes || !billing_address ||!userid ){
     return res.status(403).json({success:false , message:"required all feilds"});
    }
-
   try {
     const result = await pool.query(
       `INSERT INTO customers (email,customer_name,customer_category, pan_number, mobile_no, customer_type, shipping_address, city, state, zip_code, country, tax_id, is_active, opening_value, party , notes , date_of_birth , anniversary_date, personal_notes, billing_address ,company_name, userid) 
@@ -78,6 +77,7 @@ if(!email || !customer_id || !customer_name || !customer_category || !mobile_no 
            personal_notes = $19,
            billing_address = $20,
            company_name =$21,
+           custom_fields=$22,
            update_at = CURRENT_TIMESTAMP
        WHERE customer_id =$22  and userid=$23`,
       [email, customer_name, customer_category, pan_no, mobile_no, customer_type, shipping_address, city, state, zip_code, country, tax_id, is_active, opening_value, party_type, notes, birth_date, anniversary_date, personal_notes, billing_address,"abc",customer_id, userid]
