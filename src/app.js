@@ -8,6 +8,7 @@ const productRoutes = require("./routes/product.routes");
 const invoiceRoutes = require("./routes/invoice.routes");
 const challanRouter =require("./routes/challan.routes");
 const quotationRouter=require("./routes/quotation.routes");
+const businessprofile=require("./routes/businessprofile.routes");
 
 const app = express();
 
@@ -31,4 +32,5 @@ app.use("/api/products", productRoutes);
 app.use("/api/invoices", invoiceRoutes);
 app.use("/api/challan",challanRouter);
 app.use("/api/quotation",quotationRouter);
+app.use("/api/businessprofile",businessprofile);
 module.exports = app;
