@@ -13,7 +13,7 @@ exports.signup = async (req, res) => {
   try {
     const userExists = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
     if (userExists.rows.length > 0) {
-      return res.status(400).json({ success: false, message: "Email already exists" });
+      return res.status(409).json({ success: false, message: "Email already exists" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -39,12 +39,12 @@ exports.login = async (req, res) => {
   try {
     const user = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
     if (user.rows.length === 0) {
-      return res.status(400).json({ success: false, message: "Invalid email or password" });
+      return res.status(401).json({ success: false, message: "Invalid email or password" });
     }
 
     const isMatch = await bcrypt.compare(password, user.rows[0].password);
     if (!isMatch) {
-      return res.status(400).json({ success: false, message: "Invalid email or password" });
+      return res.status(401).json({ success: false, message: "Invalid email or password" });
     }
 
     const token = jwt.sign({ userId: user.rows[0].userid }, SECRET_KEY, { expiresIn: "1h" });
@@ -52,9 +52,14 @@ exports.login = async (req, res) => {
     // Store userId in session
     req.session.userId = user.rows[0].userid;
 
-    res.json({ success: true, message: "Login successful", token });
+    res.status(200).json({ success: true, message: "Login successful", token });
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ success: false, message: "Error logging in" });
   }
 };
+
+
+
+
+//400 409 201 500 401 200 

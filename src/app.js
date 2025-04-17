@@ -13,7 +13,7 @@ const businessprofile=require("./routes/businessprofile.routes");
 
 const app = express();
 
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '10mb' }));
 app.use(session({
   secret: 'mySecrateKey',
   resave: false,
@@ -21,7 +21,7 @@ app.use(session({
   cookie: { secure: false } // Set to true if using HTTPS
 }));
 app.use(cors({
-  origin: ["http://localhost:5173","https://adityapatidar704.github.io"],
+  origin: ["http://localhost:5003","http://localhost:5174"],
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,

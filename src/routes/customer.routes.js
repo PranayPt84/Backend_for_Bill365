@@ -13,6 +13,6 @@ router.get("/", authenticateToken , getAllCustomers);
 router.post("/",  authenticateToken , addCustomer);
 router.put("/",  authenticateToken , updateCustomer);
 router.delete("/:customer_id",  authenticateToken , deleteCustomer);
-router.get("/invoices/:customerNumber",  authenticateToken , getCustomerDetailsForInvoice);
+router.get("/invoices/:customerName",  authenticateToken , getCustomerDetailsForInvoice);
 
 module.exports = router;

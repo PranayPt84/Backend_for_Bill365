@@ -4,11 +4,11 @@ const pool = require("../config/db");
 exports.getAllProducts = async (req, res) => {
   const userid=req.userId;
   try {
-    const result = await pool.query("SELECT * FROM products where userid=$1",[userid]);
+    const result = await pool.query("SELECT * FROM products where userid=$1 order by updated_at desc",[userid]);
     if(result.rowCount===0){
-     return res.status(401).json({success:false ,message:"Product not available"});
+     return res.status(404).json({success:false ,message:"Product not available"});
     };
-    res.json(result.rows);
+    res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: "Failed to fetch products" });
@@ -32,21 +32,12 @@ exports.addProduct = async (req, res) => {
     custom_field
   
   } = req.body;
-  console.log(req.session.userId);
-  console.log(req.body);
-
  const userid=req.userId;
-
-  if (!product_name || !product_category|| !hsn_sac_code || !product_type || !product_description || product_image ||!product_unit || !product_category || !selling_price || !purchase_price || !gst_rate || !generate_barcode || !custom_field ||!userid) {
-    return res.status(400).json({ success: false, message: "Missing required fields" });
-  }
-
   try {
     const result = await pool.query(
       "INSERT INTO products (product_name, product_hsn_code, product_description, product_type,product_image,product_unit,category,selling_price,purchase_price,gst_rate,generate_barcode,custom_field,userid) VALUES ($1, $2, $3, $4, $5, $6, $7, $8,$9,$10,$11,$12,$13 ) RETURNING product_id",
       [product_name, hsn_sac_code, product_description, product_type,product_image,product_unit,product_category,selling_price,purchase_price,gst_rate,generate_barcode,custom_field ,userid]
     );
-
     res.status(201).json({ success: true, message: "Product added successfully", product: result.rows[0] });
   } catch (error) {
     console.error(error);
@@ -73,11 +64,6 @@ exports.updateProduct = async (req, res) => {
     product_id,
   } = req.body;
   const userid=req.userId;
-  console.log(userid);
-  console.log(req.body);
-  if (!product_name || !product_hsn_code || !product_type || !product_description ||!product_unit || !product_category || !selling_price || !purchase_price || !gst_rate || !generate_barcode || !custom_field ||!userid) {
-    return res.status(400).json({ success: false, message: "Missing required fields" });
-  }
   try {
     const result = await pool.query(
       `UPDATE products
@@ -98,12 +84,7 @@ exports.updateProduct = async (req, res) => {
        RETURNING product_id`,
       [product_name,product_hsn_code,product_description,product_type,product_img, product_unit,product_category, selling_price,  purchase_price,  gst_rate, generate_barcode,  custom_field,  product_id,  userid ]
     );
-
-    if (result.rowCount === 0) {
-      return res.status(404).json({ success: false, message: "Product not found" });
-    }
-
-    res.json({ success: true, message: "Product updated successfully", product: result.rows[0] });
+    res.status(201).json({ success: true, message: "Product updated successfully", product: result.rows[0] });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: "Failed to update product" });
@@ -124,7 +105,7 @@ exports.deleteProduct = async (req, res) => {
       return res.status(404).json({ success: false, message: "Product not found" });
     }
 
-    res.json({ success: true, message: "Product deleted successfully" });
+    res.status(201).json({ success: true, message: "Product deleted successfully" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: "Failed to delete product" });
@@ -137,13 +118,13 @@ exports.getProductNameForinvoice=async(req,res)=>{
     const userid=req.userId;
     const productName= await pool.query("select product_name from products where userid=$1",[userid]);
     if(productName.rowCount===0){
-     console.log('No Products available');
+    return res.status(404).json({success:false,message:"Product not found"});
     }
-    res.json(productName.rows);
+    res.status(200).json(productName.rows);
    }
    catch(error){
      console.log(error);
-     res.status(502).json({success:false,message:"server error for product"})
+     res.status(500).json({success:false,message:"server error for product"})
    }
 };
 
@@ -159,9 +140,11 @@ exports.getProductDetailsByName = async (req, res) => {
     if (productDetails.rowCount === 0) {
       return res.status(404).json({ success: false, message: "Product not available" });
     }
-    res.json(productDetails.rows);
+    res.status(200).json(productDetails.rows);
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: "Server error for product" });
   }
 };
+
+// 404 200 500 201 400

@@ -5,11 +5,11 @@ exports.getAllCustomers = async (req, res) => {
   try {
     const userid=req.userId;  
  
-    const result = await pool.query("SELECT * FROM customers where userid=$1 ",[userid]);
+    const result = await pool.query("SELECT * FROM customers where userid=$1 Order by update_at Desc ",[userid]);
     if(result.rowCount===0){
-      return res.status(401).json({success:false ,message:"customer not avilable"});
+      return res.status(404).json({success:false ,message:"customer not avilable"});
     };
-    res.json(result.rows);
+    res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: "Failed to fetch customers" });
@@ -22,11 +22,7 @@ exports.addCustomer = async (req, res) => {
     email,customer_name,customer_category, pan_no, mobile_no, customer_type, shipping_address, city, state, zip_code, country, tax_id, is_active, opening_value, party , notes , birth_date , anniversary_date , personal_notes ,billing_address
   } = req.body;
 
-  const userid=req.userId;
-   console.log(req.body);
-   if(!email || !customer_name || !customer_category || !pan_no || !mobile_no || !customer_type || !shipping_address || !city || !state || !zip_code || !country || !tax_id || is_active || !opening_value || !party || !notes || !birth_date || !anniversary_date || !personal_notes || !billing_address ||!userid ){
-    return res.status(403).json({success:false , message:"required all feilds"});
-   }
+  const userid=req.userId; 
   try {
     const result = await pool.query(
       `INSERT INTO customers (email,customer_name,customer_category, pan_number, mobile_no, customer_type, shipping_address, city, state, zip_code, country, tax_id, is_active, opening_value, party , notes , date_of_birth , anniversary_date, personal_notes, billing_address ,company_name, userid) 
@@ -49,10 +45,6 @@ exports.updateCustomer = async (req, res) => {
   } = req.body;
 
   const userid=req.userId;
-  
-if(!email || !customer_id || !customer_name || !customer_category || !mobile_no || !customer_type || !shipping_address || !city || !state || !zip_code || !country || !tax_id || !opening_value || !party_type || !notes || !birth_date || !anniversary_date || !personal_notes || !billing_address ||!userid){
-  return res.status(403).json({success:false ,message:"required all feilds"});
-}
   try {
     const result = await pool.query(
       `UPDATE customers
@@ -77,17 +69,12 @@ if(!email || !customer_id || !customer_name || !customer_category || !mobile_no 
            personal_notes = $19,
            billing_address = $20,
            company_name =$21,
-           custom_fields=$22,
+           custom_fields=$24,
            update_at = CURRENT_TIMESTAMP
        WHERE customer_id =$22  and userid=$23`,
-      [email, customer_name, customer_category, pan_no, mobile_no, customer_type, shipping_address, city, state, zip_code, country, tax_id, is_active, opening_value, party_type, notes, birth_date, anniversary_date, personal_notes, billing_address,"abc",customer_id, userid]
+      [email, customer_name, customer_category, pan_no, mobile_no, customer_type, shipping_address, city, state, zip_code, country, tax_id, is_active, opening_value, party_type, notes, birth_date, anniversary_date, personal_notes, billing_address,"abc",customer_id, userid,{"ad":"ad"}]
     );
-
-    if (result.rowCount === 0) {
-      return res.status(404).json({ success: false, message: "Customer not found" });
-    }
-
-    res.status(200).json({ success: true, message: "Customer updated successfully" });
+    res.status(201).json({ success: true, message: "Customer updated successfully" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: "Failed to update customer" });
@@ -98,14 +85,16 @@ if(!email || !customer_id || !customer_name || !customer_category || !mobile_no 
 exports.deleteCustomer = async (req, res) => {
   const { customer_id } = req.params;
   const userid=req.userId;
-
+ if(!customer_id && !userid){
+  return res.status(400).json({success:false,message:"field required"});
+ }
   try {
     const result = await pool.query("DELETE FROM customers WHERE customer_id=$1 and userid=$2" , [customer_id,userid]);
     if (result.rowCount === 0) {
       return res.status(404).json({ success: false, message: "Customer not found" });
     }
 
-    res.json({ success: true, message: "Customer deleted successfully" });
+    res.status(201).json({ success: true, message: "Customer deleted successfully" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: "Failed to delete customer" });
@@ -114,21 +103,26 @@ exports.deleteCustomer = async (req, res) => {
 
 // Get Customer Details for Invoice
 exports.getCustomerDetailsForInvoice = async (req, res) => {
-  const customerNumber = req.params.customerNumber;
+  const customerName =req.params.customerName;
   const userid=req.userId;
   
-  if (!customerNumber) {
+  if (!customerName && !userid) {
     return res.status(400).json({ success: false, message: "Field required" }); 
   }
 
   try {
-    const customerDetails = await pool.query(`SELECT * FROM customers WHERE mobile_no = $1 and userid=$2`, [customerNumber ,userid]);
+    const customerDetails = await pool.query(`SELECT * FROM customers WHERE customer_name =$1 and userid=$2`, [customerName ,userid]);
     if (customerDetails.rowCount === 0) {
       return res.status(404).json({ success: false, message: "Customer not available" });
     }
-    res.json(customerDetails.rows);
+    res.status(200).json(customerDetails.rows);
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: "Server error for customer" });
   }
 };
+
+
+
+
+// 404 200 500 201 400
