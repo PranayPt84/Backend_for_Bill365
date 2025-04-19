@@ -3,10 +3,10 @@ const pool = require("../config/db");
 // Get All Invoices
 exports.getAllInvoices = async (req, res) => {
   try {
-    const userid=req.userId;
-    const result = await pool.query("SELECT * FROM invoices where userid=$1 order by update_at desc",[userid]);
-    if(result.rowCount===0){
-      return res.status(404).json({success:false,message:"Invoce not available"});
+    const userid = req.userId;
+    const result = await pool.query("SELECT * FROM invoices where userid=$1 order by update_at desc", [userid]);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ success: false, message: "Invoce not available" });
     }
     res.status(200).json(result.rows);
   } catch (error) {
@@ -17,79 +17,66 @@ exports.getAllInvoices = async (req, res) => {
 
 // Add an Invoice
 exports.addInvoice = async (req, res) => {
-    const {
-    partyDetail,
-    bankDetails,
-    businessDetail,
-    tax_amount,
-    invoice_prefix,
-    sales_invoice_date,
-    payment_terms,
-    due_date,
-    total_amount,
-    taxable_amount,
-    sgstAmount,
-    cgstAmount,
-    add_notes,
-    perTaxAmount,
-    productdetail
-} = req.body;
+  const {
+    partyDetail, bankDetails, businessDetail, productdetail,
+    tax_amount, invoice_prefix, sales_invoice_date, payment_terms, due_date, total_amount, taxable_amount, sgstAmount, cgstAmount, add_notes, perTaxAmount
+  } = req.body;
 
-    const userid=req.userId;
-  
-    const customer_id =partyDetail[0];
-    const customerName =partyDetail[1];
-    const shippingaddress =partyDetail[2];
-    const billingaddress =partyDetail[3];
+  const userid = req.userId;
 
-    const{accountNumber,ifscCode,bankBranch,accountHolder}=bankDetails;
-    const business_name=businessDetail[0].business_name;
-    const mobile_no=businessDetail[0].mobile_no;
-    const pan_no =businessDetail[0].pan_no;
-    const gst=businessDetail[0].gst;
-    const logo =businessDetail[0].logo;
-    const signature_box =businessDetail[0].signature_box;
-    try{
+  const customer_id = partyDetail[0];
+  const customerName = partyDetail[1];
+  const shippingaddress = partyDetail[2];
+  const billingaddress = partyDetail[3];
+
+  const { accountNumber, ifscCode, bankBranch, accountHolder } = bankDetails;
+  const business_name = businessDetail[0].business_name;
+  const mobile_no = businessDetail[0].mobile_no;
+  const pan_no = businessDetail[0].pan_no;
+  const gst = businessDetail[0].gst;
+  const logo = businessDetail[0].logo;
+  const signature_box = businessDetail[0].signature_box;
+  try {
     const newInvoice = await pool.query(`
         INSERT INTO invoices(customername,shippingaddress,billingaddress,
                              accountnumber,ifsccode,bankbranch,accountholder,
                              invoice_prefix,sales_invoice_date,payment_terms,due_date,total_amount,tax_amount,taxable_amount,cgst,sgst,add_notes,business_name,mobile_no,pan_no,gst,logo,signature_box,customer_id,userid)
              values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25) Returning invoice_id                
            `,
-          [customerName,shippingaddress,billingaddress,accountNumber,ifscCode,bankBranch,accountHolder,invoice_prefix,sales_invoice_date,payment_terms,due_date,total_amount,tax_amount,taxable_amount,cgstAmount,sgstAmount,add_notes,business_name,mobile_no,pan_no,gst,logo,signature_box,customer_id,userid]);
-         const invoice_id=newInvoice.rows[0].invoice_id;
-  
+      [customerName, shippingaddress, billingaddress, accountNumber, ifscCode, bankBranch, accountHolder, invoice_prefix, sales_invoice_date, payment_terms, due_date, total_amount, tax_amount, taxable_amount, cgstAmount, sgstAmount, add_notes, business_name, mobile_no, pan_no, gst, logo, signature_box, customer_id, userid]);
+    const invoice_id = newInvoice.rows[0].invoice_id;
 
-      for(const [index,productitem] of productdetail.entries()){
-        const{productName,hsnCode,gstRate,gstCalculate,unitPrice,quantity,total,discount_amount,discount_amountPer}=productitem;
 
-           const calculatedGst=perTaxAmount[index];  
-           const sgst=calculatedGst/2;
-           const cgst=calculatedGst/2;
-          
-    const newinvoice_item = await pool.query(`
-      INSERT INTO invoice_item (invoice_id, productname, hsncode, gstrate, gstcalculate, unitprice, quantity, total, discount_amount, discount_amount_per ,calculatedgst,cgst,sgst, userid)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
-   [invoice_id,productName,hsnCode,gstRate,gstCalculate,unitPrice,quantity,total,discount_amount,discount_amountPer,calculatedGst,cgst,sgst,userid]);
-      }
-    res.status(201).json({ success: true, message: "Invoice added successfully"});
+    for (const [index, productitem] of productdetail.entries()) {
+      const { productName, hsnCode, gstRate, gstCalculate, unitPrice, quantity, total, discount_amount, discount_amountPer, taxable_amount } = productitem;
 
-}
- catch (error) {
+      const calculatedGst = perTaxAmount[index];
+      const sgst = calculatedGst / 2;
+      const cgst = calculatedGst / 2;
+
+      const newinvoice_item = await pool.query(`
+      INSERT INTO invoice_item (invoice_id, productname, hsncode, gstrate, gstcalculate, unitprice, quantity, total, discount_amount, discount_amount_per ,calculatedgst,cgst,sgst,taxableamount, userid)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+        [invoice_id, productName, hsnCode, gstRate, gstCalculate, unitPrice, quantity, total, discount_amount, discount_amountPer, calculatedGst, cgst, sgst, taxable_amount, userid]);
+    }
+    res.status(201).json({ success: true, message: "Invoice added successfully" });
+
+  }
+  catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: "Server error" });
-}
+  }
 };
 
 //get  Invoice by customerNumber 
-exports.getInvoicesbyCustomerNumber = async(req,res)=>{
-    const customerNumber=req.params.customerNumber;
-    const userid=req.userId;
-    try{
-      if(!customerNumber || !userid){
-        res.status(401).json({message:"required customerNumber "})
-      }
-     const invoicedetails=await pool.query(`SELECT 
+exports.getInvoicesbyCustomerNumber = async (req, res) => {
+  const customerNumber = req.params.customerNumber;
+  const userid = req.userId;
+  try {
+    if (!customerNumber || !userid) {
+      res.status(401).json({ message: "required customerNumber " })
+    }
+    const invoicedetails = await pool.query(`SELECT 
       c.invoice_id,
       c.invoice_date,
       c.mob_number ,
@@ -106,53 +93,36 @@ exports.getInvoicesbyCustomerNumber = async(req,res)=>{
   JOIN 
       public.customers cu ON c.customer_id = cu.customer_id
   WHERE 
-        cu.mobile_no =$1 and c.userid=$2;`,[customerNumber,userid]);
-        if(invoicedetails.rowCount===0){
-          res.status(401).json({success:false,message:"challan not available"})
-        }
-        console.log(invoicedetails.rows)
-       res.json(invoicedetails.rows); 
+        cu.mobile_no =$1 and c.userid=$2;`, [customerNumber, userid]);
+    if (invoicedetails.rowCount === 0) {
+      res.status(401).json({ success: false, message: "challan not available" })
     }
-    catch(error){
-      console.log(error);
-      res.status(401).json({success:false ,message:"server Error"})
-    }
+    console.log(invoicedetails.rows)
+    res.json(invoicedetails.rows);
+  }
+  catch (error) {
+    console.log(error);
+    res.status(401).json({ success: false, message: "server Error" })
+  }
 };
 // Update an Invoice
-exports.updateInvoice = async (req, res) => {  
+exports.updateInvoice = async (req, res) => {
   const {
-    invoiceId,
-    invoiceDate,
-    invoiceDueDate,
-    invoicePrefix,
-    paymentTerms,
-    sgstAmount,
-    cgstAmount,
-    taxableAmount,
-    totalAmount,
-    customerId,
-    customerName,
-    billing_address,
-    shipping_address,
-    invoiceNotes,
-    signature_box,
-    bankDetail,
-    businessprofile,
-    taxAmount,
-    productData
+    invoiceId, invoiceDate, invoiceDueDate, invoicePrefix, paymentTerms, sgstAmount, cgstAmount, taxableAmount, totalAmount, customerId, customerName,
+    billing_address, shipping_address, invoiceNotes, signature_box, bankDetail, businessprofile, taxAmount, productData
   } = req.body;
 
   const userid = req.userId;
- const accountNumber=bankDetail[0];
-  const ifscCode=bankDetail[1];
-  const bankBranch=bankDetail[2];
-  const accountHolder=bankDetail[3];
-  
- const business_name=businessprofile[0].business_name;
- const mobile_no=businessprofile[0].mobile_no;
- const pan_no =businessprofile[0].pan_no;
- const gst =businessprofile[0].gst;
- const logo =businessprofile[0].logo;
+  const accountNumber = bankDetail[0];
+  const ifscCode = bankDetail[1];
+  const bankBranch = bankDetail[2];
+  const accountHolder = bankDetail[3];
+
+  const business_name = businessprofile[0].business_name;
+  const mobile_no = businessprofile[0].mobile_no;
+  const pan_no = businessprofile[0].pan_no;
+  const gst = businessprofile[0].gst;
+  const logo = businessprofile[0].logo;
 
   try {
     const existingInvoice = await pool.query('SELECT invoice_id FROM invoices WHERE invoice_id = $1 AND userid = $2', [invoiceId, userid]);
@@ -184,36 +154,15 @@ exports.updateInvoice = async (req, res) => {
           gst = $20,
           logo = $21,
           signature_box = $22,
-          customer_id = $23
+          customer_id = $23,
+          update_at = CURRENT_TIMESTAMP
         WHERE invoice_id = $24 AND userid = $25
         RETURNING invoice_id
       `,
       [
-        customerName,
-        shipping_address,
-        billing_address,
-        accountNumber,
-        ifscCode,
-        bankBranch,
-        accountHolder,
-        invoicePrefix,
-        invoiceDate,
-        paymentTerms,
-        invoiceDueDate,
-        totalAmount,
-        taxableAmount,
-        cgstAmount,
-        sgstAmount,
-        invoiceNotes,
-        business_name,
-        mobile_no,
-        pan_no,
-        gst,
-        logo,
-        signature_box,
-        customerId,
-        invoiceId,
-        userid,
+        customerName, shipping_address, billing_address, accountNumber, ifscCode, bankBranch, accountHolder, invoicePrefix, invoiceDate, paymentTerms,
+        invoiceDueDate, totalAmount, taxableAmount, cgstAmount, sgstAmount, invoiceNotes, business_name, mobile_no, pan_no, gst, logo, signature_box,
+        customerId, invoiceId, userid,
       ]
     );
 
@@ -224,17 +173,17 @@ exports.updateInvoice = async (req, res) => {
 
       for (const [index, productitem] of productData.entries()) {
         console.log(productitem);
-        const { id,productName, hsnCode, gstRate, unitPrice, quantity, total, discount_amount, discount_amountPer,taxable_amount,gstCalculate } = productitem;
+        const { id, productName, hsnCode, gstRate, unitPrice, quantity, total, discount_amount, discount_amountPer, taxable_amount, gstCalculate } = productitem;
         const calculatedGst = taxAmount[index];
         const sgst = calculatedGst / 2;
         const cgst = calculatedGst / 2;
 
         await pool.query(
           `
-            INSERT INTO invoice_item (invoice_id, productname, hsncode, gstrate, unitprice, quantity, total, discount_amount, discount_amount_per ,calculatedgst,cgst,sgst, userid)
-            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+            INSERT INTO invoice_item (invoice_id, productname, hsncode, gstrate, unitprice, quantity, total, discount_amount, discount_amount_per ,calculatedgst,cgst,sgst,taxableamount, userid)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
           `,
-          [updated_invoice_id, productName, hsnCode, gstRate, unitPrice, quantity, total, discount_amount, discount_amountPer, calculatedGst, cgst, sgst, userid]
+          [updated_invoice_id, productName, hsnCode, gstRate, unitPrice, quantity, total, discount_amount, discount_amountPer, calculatedGst, cgst, sgst, taxable_amount, userid]
         );
       }
 
@@ -252,15 +201,15 @@ exports.updateInvoice = async (req, res) => {
 // Delete an Invoice
 exports.deleteInvoice = async (req, res) => {
   const { invoice_id } = req.params;
-  const userid=req.userId;
+  const userid = req.userId;
 
-  if(!invoice_id || !userid){
-    return res.status(401).json({success:false,message:"require all fields"});
+  if (!invoice_id || !userid) {
+    return res.status(401).json({ success: false, message: "require all fields" });
   }
 
   try {
-    await pool.query("DELETE FROM invoice_item WHERE invoice_id = $1 and userid=$2", [invoice_id,userid]);
-    const result= await pool.query("Delete from invoices where invoice_id=$1 and userid=$2",[invoice_id,userid]);
+    await pool.query("DELETE FROM invoice_item WHERE invoice_id = $1 and userid=$2", [invoice_id, userid]);
+    const result = await pool.query("Delete from invoices where invoice_id=$1 and userid=$2", [invoice_id, userid]);
     if (result.rowCount === 0) {
       return res.status(404).json({ success: false, message: "Invoice not found" });
     }
@@ -272,6 +221,100 @@ exports.deleteInvoice = async (req, res) => {
   }
 };
 
+// Convert Challan to Invoice
+exports.convertChallanToInvoice = async (req, res) => {
+  const { challanId } = req.params;
+  const userid = req.userId;
+  try {
+    const resultchallan = await pool.query("SELECT * FROM challan WHERE challan_id = $1 and userid=$2", [challanId, userid]);
+    if (resultchallan.rowCount === 0) {
+      return res.status(404).json({ success: false, message: "Challan not found" });
+    }
+    const resultchallanitem = await pool.query("SELECT * FROM challan_item WHERE challan_id = $1 and userid=$2", [challanId, userid]);
+    if (resultchallanitem.rowCount === 0) {
+      return res.status(404).json({ success: false, message: "Challan item not found" });
+    }
+
+    const { tax_amount, customername, shippingaddress, billingaddress, accountnumber, ifsccode, bankbranch, accountholder, challan_prefix,
+      sales_challan_date, payment_terms, due_date, total_amount, add_notes, customer_id, taxable_amount, cgst, sgst, business_name, mobile_no,
+      pan_no, gst, logo, signature_box } = resultchallan.rows[0];
+
+    const newInvoice = await pool.query(`
+        INSERT INTO invoices(customername,shippingaddress,billingaddress,
+                             accountnumber,ifsccode,bankbranch,accountholder,
+                             invoice_prefix,sales_invoice_date,payment_terms,due_date,total_amount,tax_amount,taxable_amount,cgst,sgst,add_notes,business_name,mobile_no,pan_no,gst,logo,signature_box,customer_id,userid)
+             values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25) Returning invoice_id                
+           `,
+      [customername, shippingaddress, billingaddress, accountnumber, ifsccode, bankbranch, accountholder, challan_prefix, sales_challan_date,
+        payment_terms, due_date, total_amount, tax_amount, taxable_amount, cgst, sgst, add_notes, business_name, mobile_no, pan_no, gst, logo,
+        signature_box, customer_id, userid]);
+    const invoice_id = newInvoice.rows[0].invoice_id;
+
+    for (const items of resultchallanitem.rows) {
+      const { productname, hsncode, gstrate, gstcalculate, unitprice, quantity, total, discount_amount, discount_amount_per, calculatedgst, cgst, sgst, taxableamount } = items
+
+      const newinvoice_item = await pool.query(`
+        INSERT INTO invoice_item (invoice_id, productname, hsncode, gstrate, gstcalculate, unitprice, quantity, total, discount_amount, discount_amount_per ,calculatedgst,cgst,sgst,taxableamount, userid)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+        [invoice_id, productname, hsncode, gstrate, gstcalculate, unitprice, quantity, total, discount_amount, discount_amount_per, calculatedgst, cgst, sgst, taxableamount, userid]);
+    }
+
+    await pool.query("update challan set status='close' where challan_id=$1 and userid=$2", [challanId, userid]);
+
+    res.status(201).json({ success: true, message: "Challan converted to invoice successfully" });
+  } catch (error) {
+    console.error("Error converting challan to invoice:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+exports.convertQuotationtoinvoice = async (req, res) => {
+  const { quotationId } = req.params;
+  const userid = req.userId;
+  try {
+    const resultquotation = await pool.query("SELECT * FROM quotation WHERE quotation_id = $1 and userid=$2", [quotationId, userid]);
+    if (resultquotation.rowCount === 0) {
+      return res.status(404).json({ success: false, message: "Quotation not found" });
+    }
+    const resultquotationitem = await pool.query("SELECT * FROM quotation_item WHERE quotation_id = $1 and userid=$2", [quotationId, userid]);
+    if (resultquotationitem.rowCount === 0) {
+      return res.status(404).json({ success: false, message: "Quotation item not found" });
+    }
+
+    const { tax_amount, customername, shippingaddress, billingaddress, accountnumber, ifsccode, bankbranch, accountholder, quotation_prefix,
+      sales_quotation_date, payment_terms, due_date, total_amount, add_notes, customer_id, taxable_amount, cgst, sgst, business_name, mobile_no,
+      pan_no, gst, logo, signature_box } = resultquotation.rows[0];
+
+    const newInvoice = await pool.query(`
+        INSERT INTO invoices(customername,shippingaddress,billingaddress,
+                             accountnumber,ifsccode,bankbranch,accountholder,
+                             invoice_prefix,sales_invoice_date,payment_terms,due_date,total_amount,tax_amount,taxable_amount,cgst,sgst,add_notes,business_name,mobile_no,pan_no,gst,logo,signature_box,customer_id,userid)
+             values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25) Returning invoice_id                
+           `,
+      [customername, shippingaddress, billingaddress, accountnumber, ifsccode, bankbranch, accountholder,
+        quotation_prefix, sales_quotation_date,payment_terms,due_date,total_amount,tax_amount,taxable_amount,cgst,sgst,add_notes,business_name,
+        mobile_no,pan_no,gst,logo,signature_box,customer_id,userid]);
+      const invoice_id = newInvoice.rows[0].invoice_id;
+    for (const items of resultquotationitem.rows) {
+      const { productname, hsncode, gstrate, gstcalculate, unitprice, quantity, total, discount_amount, discount_amount_per, calculatedgst, cgst, sgst, taxableamount } = items
+
+      const newinvoice_item = await pool.query(`
+        INSERT INTO invoice_item (invoice_id, productname, hsncode, gstrate, gstcalculate, unitprice, quantity, total, discount_amount, discount_amount_per ,calculatedgst,cgst,sgst,taxableamount, userid)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+        [invoice_id, productname, hsncode, gstrate, gstcalculate, unitprice, quantity, total, discount_amount, discount_amount_per,
+          calculatedgst,cgst,sgst,taxableamount ,userid]);
+        }
+          await pool.query("update quotation set status='close' where quotation_id=$1 and userid=$2", [quotationId, userid]);
+
+          res.status(201).json({ success: true, message: "Quotation converted to invoice successfully" });  
+
+    }
+
+catch (error) {
+    console.error("Error converting quotation to invoice:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+}
 // // Get Invoice Details
 // exports.getInvoiceDetails = async (req, res) => {
 //   const { id } = req.params;

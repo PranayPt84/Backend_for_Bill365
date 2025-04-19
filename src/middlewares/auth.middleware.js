@@ -13,7 +13,7 @@ const authenticateToken = (req, res, next) => {
     const verified = jwt.verify(token.replace("Bearer ", ""), config.SECRET_KEY);
     req.user = verified; 
      const userId = req.session.userId; // Access the user ID from the session
-    //  console.log(userId);
+    //  console.log("here is our log"+userId);
     if (!userId) {
         return res.status(401).json({ message: "Unauthorized first login yourself" });
     }

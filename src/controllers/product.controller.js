@@ -112,7 +112,7 @@ exports.deleteProduct = async (req, res) => {
   }
 };
 
-// Get Product Details by Name
+// With this api we will get All Product Name from backend for invoice ,challan andf quotation
 exports.getProductNameForinvoice=async(req,res)=>{
   try{
     const userid=req.userId;

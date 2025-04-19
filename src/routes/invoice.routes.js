@@ -8,6 +8,7 @@ router.post("/", authenticateToken, invoiceController.addInvoice);
 router.get("/invoicesdetails/:customerNumber",authenticateToken, invoiceController.getInvoicesbyCustomerNumber);
 router.put("/", authenticateToken, invoiceController.updateInvoice);
 router.delete("/:invoice_id", authenticateToken, invoiceController.deleteInvoice);
-// router.get("/:id", authenticateToken, invoiceController.getInvoiceDetails);
+router.post("/convert/challan/invoice/:challanId", authenticateToken, invoiceController.convertChallanToInvoice);
+router.post("/convert/quotation/invoice/:quotationId", authenticateToken, invoiceController.convertQuotationtoinvoice);
 
 module.exports = router;

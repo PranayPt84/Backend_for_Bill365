@@ -45,16 +45,16 @@ exports.createquotation=async(req , res)=>{
   
 
       for(const [index,productitem] of productdetail.entries()){
-        const{productName,hsnCode,gstRate,gstCalculate,unitPrice,quantity,total,discount_amount,discount_amountPer}=productitem;
+        const{productName,hsnCode,gstRate,gstCalculate,unitPrice,quantity,total,discount_amount,discount_amountPer,tax_amount}=productitem;
 
            const calculatedGst=perTaxAmount[index];  
            const sgst=calculatedGst/2;
            const cgst=calculatedGst/2;
           
     const newinvoice_item = await pool.query(`
-      INSERT INTO quotation_item (quotation_id, productname, hsncode, gstrate, gstcalculate, unitprice, quantity, total, discount_amount, discount_amount_per ,calculatedgst,cgst,sgst, userid)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
-   [quotation_id,productName,hsnCode,gstRate,gstCalculate,unitPrice,quantity,total,discount_amount,discount_amountPer,calculatedGst,cgst,sgst,userid]);
+      INSERT INTO quotation_item (quotation_id, productname, hsncode, gstrate, gstcalculate, unitprice, quantity, total, discount_amount, discount_amount_per ,calculatedgst,cgst,sgst,taxableamount, userid)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+   [quotation_id,productName,hsnCode,gstRate,gstCalculate,unitPrice,quantity,total,discount_amount,discount_amountPer,calculatedGst,cgst,sgst,tax_amount,userid]);
       }
     res.status(201).json({ success: true, message: "Quotation added successfully"});
 
@@ -131,7 +131,8 @@ exports.updateQuotation =async(req , res)=>{
             gst = $20,
             logo = $21,
             signature_box = $22,
-            customer_id = $23
+            customer_id = $23,
+           update_at = CURRENT_TIMESTAMP
           WHERE quotation_id = $24 AND userid = $25
           RETURNING quotation_id
         `,
@@ -178,10 +179,10 @@ exports.updateQuotation =async(req , res)=>{
   
           await pool.query(
             `
-              INSERT INTO quotation_item (quotation_id, productname, hsncode, gstrate, unitprice, quantity, total, discount_amount, discount_amount_per ,calculatedgst,cgst,sgst, userid)
-              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+              INSERT INTO quotation_item (quotation_id, productname, hsncode, gstrate, unitprice, quantity, total, discount_amount, discount_amount_per ,calculatedgst,cgst,sgst,taxableamount, userid)
+              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
             `,
-            [updated_quotation_id, productName, hsnCode, gstRate, unitPrice, quantity, total, discount_amount, discount_amountPer, calculatedGst, cgst, sgst, userid]
+            [updated_quotation_id, productName, hsnCode, gstRate, unitPrice, quantity, total, discount_amount, discount_amountPer, calculatedGst, cgst, sgst,taxable_amount,userid]
           );
         }
   
@@ -208,4 +209,25 @@ exports.updateQuotation =async(req , res)=>{
           res.status(500).json({ success: false, message: "Failed to fetch challans" });
         }
       };
-    
+   
+
+exports.deletequotation = async (req, res) => {
+  const { quotation_id } = req.params;
+  const userid=req.userId;
+
+  if(!quotation_id || !userid){
+    return res.status(401).json({success:false,message:"require all fields"});
+  }
+  try {
+    await pool.query("DELETE FROM quotation_item WHERE quotation_id = $1 and userid=$2", [quotation_id,userid]);
+    const result= await pool.query("Delete from quotation where quotation_id=$1 and userid=$2",[quotation_id,userid]);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ success: false, message: "Quotation not found" });
+    }
+
+    res.json({ success: true, message: "Quotation deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting quotation:", error);
+    res.status(500).json({ success: false, message: "Failed to delete quotation" });
+  }
+};

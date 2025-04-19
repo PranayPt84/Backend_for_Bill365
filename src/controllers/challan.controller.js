@@ -46,16 +46,16 @@ exports.createChallan = async (req, res) => {
    
  
        for(const [index,productitem] of productdetail.entries()){
-         const{productName,hsnCode,gstRate,gstCalculate,unitPrice,quantity,total,discount_amount,discount_amountPer}=productitem;
+         const{productName,hsnCode,gstRate,gstCalculate,unitPrice,quantity,total,discount_amount,discount_amountPer,taxable_amount}=productitem;
  
             const calculatedGst=perTaxAmount[index];  
             const sgst=calculatedGst/2;
             const cgst=calculatedGst/2;
            
      const newinvoice_item = await pool.query(`
-       INSERT INTO challan_item (challan_id, productname, hsncode, gstrate, gstcalculate, unitprice, quantity, total, discount_amount, discount_amount_per ,calculatedgst,cgst,sgst, userid)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
-    [challan_id,productName,hsnCode,gstRate,gstCalculate,unitPrice,quantity,total,discount_amount,discount_amountPer,calculatedGst,cgst,sgst,userid]);
+       INSERT INTO challan_item (challan_id, productname, hsncode, gstrate, gstcalculate, unitprice, quantity, total, discount_amount, discount_amount_per ,calculatedgst,cgst,sgst,taxableamount, userid)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+    [challan_id,productName,hsnCode,gstRate,gstCalculate,unitPrice,quantity,total,discount_amount,discount_amountPer,calculatedGst,cgst,sgst,taxable_amount,userid]);
        }
      res.status(201).json({ success: true, message: "challan added successfully"});
  
@@ -209,7 +209,8 @@ exports.updateChallan = async (req, res) => {
           gst = $20,
           logo = $21,
           signature_box = $22,
-          customer_id = $23
+          customer_id = $23,
+          update_at = CURRENT_TIMESTAMP
         WHERE challan_id = $24 AND userid = $25
         RETURNING challan_id
       `,
@@ -249,17 +250,17 @@ exports.updateChallan = async (req, res) => {
 
       for (const [index, productitem] of productData.entries()) {
         console.log(productitem);
-        const { id,productName, hsnCode, gstRate, unitPrice, quantity, total, discount_amount, discount_amountPer,taxable_amount,gstCalculate } = productitem;
+        const { id,productName, hsnCode, gstRate, unitPrice, quantity, total, discount_amount, discount_amountPer,taxable_amount,gstCalculate} = productitem;
         const calculatedGst = taxAmount[index];
         const sgst = calculatedGst / 2;
         const cgst = calculatedGst / 2;
 
         await pool.query(
           `
-            INSERT INTO challan_item (challan_id, productname, hsncode, gstrate, unitprice, quantity, total, discount_amount, discount_amount_per ,calculatedgst,cgst,sgst, userid)
+            INSERT INTO challan_item (challan_id, productname, hsncode, gstrate, unitprice, quantity, total, discount_amount, discount_amount_per ,calculatedgst,cgst,sgst, taxableamount ,userid)
             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
           `,
-          [updated_challan_id, productName, hsnCode, gstRate, unitPrice, quantity, total, discount_amount, discount_amountPer, calculatedGst, cgst, sgst, userid]
+          [updated_challan_id, productName, hsnCode, gstRate, unitPrice, quantity, total, discount_amount, discount_amountPer, calculatedGst, cgst, sgst,taxable_amount, userid]
         );
       }
 
@@ -273,22 +274,21 @@ exports.updateChallan = async (req, res) => {
   }
 };
 
+// Delete a challan
+exports.deleteChallan = async (req, res) => {
+  const { id } = req.params;
+  const userid=req.userId;
 
+  try {
+    await pool.query("DELETE FROM challan_item WHERE challan_id = $1 AND userid=$2", [id,userid]);
+    const result = await pool.query("DELETE FROM challan WHERE challan_id = $1 AND userid=$2", [id,userid]);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ success: false, message: "Challan not found" });
+    }
 
-
-// // Delete a challan
-// exports.deleteChallan = async (req, res) => {
-//   const { id } = req.params;
-
-//   try {
-//     const result = await pool.query("DELETE FROM challan WHERE challan_id = $1", [id]);
-//     if (result.rowCount === 0) {
-//       return res.status(404).json({ success: false, message: "Challan not found" });
-//     }
-
-//     res.json({ success: true, message: "Challan deleted successfully" });
-//   } catch (error) {
-//     console.error("Error deleting challan:", error);
-//     res.status(500).json({ success: false, message: "Failed to delete challan" });
-//   }
-// };
+    res.json({ success: true, message: "Challan deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting challan:", error);
+    res.status(500).json({ success: false, message: "Failed to delete challan" });
+  }
+};
